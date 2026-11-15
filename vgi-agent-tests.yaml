@@ -1,16 +1,64 @@
 # Private graders for the public vgi.agent_test_tasks in the worker's catalog metadata.
-# `vgi-lint lint --ai` runs an agent on each prompt and grades it with check_sql.
-# See https://github.com/Query-farm/vgi-lint-check (VGI920).
+# `vgi-lint lint --ai` runs an agent on each prompt and grades it (VGI920).
+#
+# Every linear object needs a `linear` secret pointing at a Linear workspace (the offline
+# GraphQL server in test/mock_api/server.ts with API_KEY 'lin_api_admin' works too). The
+# fixture workspace is static, so every task compares against a reference query.
 tasks:
-  - name: formal_greeting
-    reference_sql: SELECT linear.main.greet('Grace', 'formal') AS greeting
-  - name: sum_of_squares
-    reference_sql: SELECT sum(squared) AS total FROM linear.main.sequence_table(10)
-  - name: stepped_sequence
-    reference_sql: SELECT n FROM linear.main.sequence_table(4, step := 5) ORDER BY n
-  # Reads the public demo API (https://vgi-starter-api.query-farm.services/v1).
-  - name: items_per_category
-    check_sql: >-
-      SELECT count(*) = 3 AND sum(items) = 25
-      FROM (SELECT category, count(*) AS items
-            FROM linear.main.fetch_items('https://vgi-starter-api.query-farm.services/v1') GROUP BY category)
+  - name: open_eng_issues
+    reference_sql: >-
+      SELECT key, title FROM linear.main.issues() WHERE team_key = 'ENG' AND state = 'open' ORDER BY key
+  - name: urgent_count
+    reference_sql: SELECT count(*) AS issues FROM linear.main.issues() WHERE priority = 1
+  - name: issues_by_status
+    reference_sql: >-
+      SELECT status, count(*) AS issues FROM linear.main.issues() WHERE team_key = 'ENG' GROUP BY status ORDER BY status
+  - name: ada_assigned
+    reference_sql: >-
+      SELECT key FROM linear.main.issues() WHERE assignee = 'ada' AND state = 'open' ORDER BY key
+  - name: bug_issues
+    reference_sql: SELECT key FROM linear.main.issues() WHERE list_contains(labels, 'Bug') ORDER BY key
+  - name: cycle_time
+    reference_sql: >-
+      SELECT (epoch_ms(max(created_at) FILTER (WHERE to_state = 'Done'))
+              - epoch_ms(min(created_at) FILTER (WHERE to_state = 'In Progress'))) / 3600000 AS hours
+      FROM linear.main.issue_history(issue_key := 'ENG-1')
+  - name: eng1_comments
+    reference_sql: SELECT user_login, body FROM linear.main.comments(issue_key := 'ENG-1') ORDER BY created_at
+  - name: eng1_attachments
+    reference_sql: SELECT title, url FROM linear.main.attachments(issue_key := 'ENG-1') ORDER BY title
+  - name: blocking
+    reference_sql: >-
+      SELECT issue_key, related_issue_key FROM linear.main.issue_relations() WHERE type = 'blocks' ORDER BY issue_key
+  - name: team_list
+    reference_sql: SELECT key, name FROM linear.main.teams ORDER BY key
+  - name: done_states
+    reference_sql: >-
+      SELECT name FROM linear.main.workflow_states WHERE team_key = 'ENG' AND type = 'completed' ORDER BY name
+  - name: active_users
+    reference_sql: SELECT display_name FROM linear.main.users WHERE active ORDER BY display_name
+  - name: at_risk_projects
+    reference_sql: SELECT name FROM linear.main.projects WHERE health = 'atRisk' ORDER BY name
+  - name: latest_update
+    reference_sql: >-
+      SELECT health FROM linear.main.project_updates WHERE project = 'Apollo' ORDER BY created_at DESC LIMIT 1
+  - name: active_cycle
+    reference_sql: SELECT number, ends_at FROM linear.main.cycles WHERE team_key = 'ENG' AND is_active
+  - name: initiatives
+    reference_sql: SELECT name, status FROM linear.main.initiatives ORDER BY name
+  - name: customer_requests
+    reference_sql: SELECT customer FROM linear.main.customer_needs WHERE issue_key = 'ENG-2' ORDER BY customer
+  - name: audit_logins
+    reference_sql: >-
+      SELECT DISTINCT ip FROM linear.main.audit_entries WHERE type = 'user.login' ORDER BY ip
+  - name: workspace_labels
+    reference_sql: >-
+      SELECT name FROM linear.main.labels WHERE team_key IS NULL AND NOT is_group ORDER BY name
+  - name: top_customer
+    reference_sql: SELECT name, tier FROM linear.main.customers ORDER BY revenue DESC LIMIT 1
+  - name: apollo_milestones
+    reference_sql: >-
+      SELECT name, target_date FROM linear.main.project_milestones WHERE project = 'Apollo' ORDER BY target_date
+  - name: roadmap_projects
+    reference_sql: >-
+      SELECT unnest(project_names) AS project FROM linear.main.roadmaps WHERE name = '2026 Roadmap' ORDER BY project

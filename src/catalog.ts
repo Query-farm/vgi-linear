@@ -1,58 +1,85 @@
 /**
- * Assemble the functions into the catalog DuckDB attaches.
- *
- * To add a function: write it (see `greet.ts` / `sequence.ts` /
- * `fetch_items.ts`), then add it to `FUNCTIONS` below.
+ * Assemble the `linear` catalog: the table functions, the parameterless collections as
+ * tables, and the `linear` secret type.
  */
 
-import type { CatalogDescriptor, VgiFunction } from "@query-farm/vgi";
-import { API_SECRET_TYPE, fetchItems } from "./fetch_items.ts";
-import { greet, greetWithStyle } from "./greet.ts";
-import { CATALOG_DOC_MD, CATALOG_NAME, CATALOG_TAGS, SCHEMA_DOC_MD, SCHEMA_TAGS, SOURCE_URL } from "./meta.ts";
-import { sequenceTable } from "./sequence.ts";
+import { type CatalogDescriptor, field, schema, utf8, type VgiFunction } from "@query-farm/vgi";
+import { DEFAULT_BASE_URL, SECRET_TYPE } from "./linear/client.ts";
+import { FUNCTIONS, TABLES } from "./linear/resources.ts";
+import { CATALOG_COMMENT, CATALOG_NAME, CATALOG_TAGS, SCHEMA_DOC_MD, SCHEMA_TAGS, SOURCE_URL } from "./meta.ts";
 
-export const FUNCTIONS: VgiFunction[] = [greet, greetWithStyle, sequenceTable, fetchItems];
+export { FUNCTIONS, TABLES };
+
+const doc = (text: string) => new Map([["vgi_doc", text]]);
+const redacted = (text: string) =>
+  new Map([
+    ["redact", "true"],
+    ["vgi_doc", text],
+  ]);
+
+/** CREATE SECRET (TYPE linear, API_KEY 'lin_api_…') — or ACCESS_TOKEN for OAuth 2.0. */
+export const LINEAR_SECRET_TYPE = {
+  name: SECRET_TYPE,
+  description: "A Linear personal API key or OAuth 2.0 access token (plus an optional GraphQL endpoint)",
+  schema: schema(
+    [
+      field(
+        "api_key",
+        utf8(),
+        true,
+        redacted("Personal API key (lin_api_…, Settings > Security & access). Sent as `Authorization: <key>`."),
+      ),
+      field(
+        "access_token",
+        utf8(),
+        true,
+        redacted("OAuth 2.0 access token (read scope is enough). Sent as `Authorization: Bearer <token>`."),
+      ),
+      field(
+        "base_url",
+        utf8(),
+        true,
+        doc(`GraphQL endpoint; default ${DEFAULT_BASE_URL} (http:// is accepted only for 127.0.0.1/localhost).`),
+      ),
+    ],
+    new Map([["vgi_doc_url", "https://linear.app/developers/graphql#authentication"]]),
+  ),
+};
 
 interface Example {
   description: string;
   sql: string;
 }
 
-/**
- * Publish each function's examples as `vgi.example_queries` (with descriptions).
- *
- * Overloads share one SQL name, so their examples are merged per name.
- * Returns every example, for the schema-level list.
- */
+/** Publish each function's examples as `vgi.example_queries`; return them all for the schema. */
 function stampExampleQueries(functions: VgiFunction[]): Example[] {
-  const byName = new Map<string, Example[]>();
+  const all: Example[] = [];
   for (const fn of functions) {
-    const bucket = byName.get(fn.meta.name) ?? [];
-    byName.set(fn.meta.name, bucket);
-    for (const ex of fn.meta.examples ?? []) {
-      if (!bucket.some((e) => e.sql === ex.sql)) bucket.push({ description: ex.description, sql: ex.sql });
-    }
+    const ex = (fn.meta.examples ?? []).map((e) => ({ description: e.description, sql: e.sql }));
+    fn.meta.tags = { ...fn.meta.tags, "vgi.example_queries": JSON.stringify(ex) };
+    all.push(...ex);
   }
-  for (const fn of functions) {
-    fn.meta.tags = { ...fn.meta.tags, "vgi.example_queries": JSON.stringify(byName.get(fn.meta.name)) };
-  }
-  return [...byName.values()].flat();
+  return all;
 }
 
-const ALL_EXAMPLES = stampExampleQueries(FUNCTIONS);
+const ALL_EXAMPLES = [
+  ...stampExampleQueries(FUNCTIONS),
+  ...TABLES.flatMap((t) => JSON.parse(t.tags?.["vgi.example_queries"] ?? "[]") as Example[]),
+];
 
 export const CATALOG: CatalogDescriptor = {
   name: CATALOG_NAME,
-  comment: CATALOG_DOC_MD,
+  comment: CATALOG_COMMENT,
   sourceUrl: SOURCE_URL,
   tags: CATALOG_TAGS,
-  secretTypes: [API_SECRET_TYPE],
+  secretTypes: [LINEAR_SECRET_TYPE],
   schemas: [
     {
       path: ["main"],
       comment: SCHEMA_DOC_MD,
       functions: FUNCTIONS,
-      tags: { ...SCHEMA_TAGS, "vgi.example_queries": JSON.stringify(ALL_EXAMPLES) },
+      tables: TABLES,
+      tags: { ...SCHEMA_TAGS, "vgi.example_queries": JSON.stringify(ALL_EXAMPLES.slice(0, 12)) },
     },
   ],
 };

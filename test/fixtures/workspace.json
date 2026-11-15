@@ -1,0 +1,135 @@
+{
+  "_comment": "Hand-built Linear workspace served by test/mock_api/server.ts. Omitted nullable fields default to null (see DEFAULTS there).",
+  "organization": { "id": "org-acme", "name": "Acme Robotics", "urlKey": "acme" },
+  "users": [
+    { "id": "u-ada", "displayName": "ada", "name": "Ada Lovelace", "email": "ada@example.com", "active": true, "admin": true, "guest": false, "app": false, "isMe": true, "title": "Staff Engineer", "timezone": "Europe/London", "url": "https://linear.app/acme/profiles/ada", "lastSeen": "2026-11-14T18:00:00.000Z", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2026-11-14T18:00:00.000Z" },
+    { "id": "u-grace", "displayName": "grace", "name": "Grace Hopper", "email": "grace@example.com", "active": true, "admin": false, "guest": false, "app": false, "isMe": false, "title": "Engineering Manager", "timezone": "America/New_York", "url": "https://linear.app/acme/profiles/grace", "lastSeen": "2026-11-13T15:00:00.000Z", "createdAt": "2025-01-11T09:00:00.000Z", "updatedAt": "2026-11-13T15:00:00.000Z" },
+    { "id": "u-alan", "displayName": "alan", "name": "Alan Turing", "email": "alan@example.com", "active": false, "admin": false, "guest": false, "app": false, "isMe": false, "timezone": "Europe/London", "url": "https://linear.app/acme/profiles/alan", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2026-11-01T09:00:00.000Z" },
+    { "id": "u-kat", "displayName": "kat", "name": "Katherine Johnson", "email": "kat@example.com", "active": true, "admin": false, "guest": true, "app": false, "isMe": false, "title": "SRE", "timezone": "America/Chicago", "url": "https://linear.app/acme/profiles/kat", "lastSeen": "2026-11-14T12:00:00.000Z", "createdAt": "2025-03-01T09:00:00.000Z", "updatedAt": "2026-11-14T12:00:00.000Z" }
+  ],
+  "teams": [
+    { "id": "t-eng", "key": "ENG", "name": "Engineering", "displayName": "Engineering", "description": "Product engineering", "private": false, "color": "#5e6ad2", "icon": "Code", "timezone": "Europe/London", "cyclesEnabled": true, "cycleDuration": 2, "triageEnabled": false, "issueEstimationType": "fibonacci", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2026-10-01T09:00:00.000Z" },
+    { "id": "t-ops", "key": "OPS", "name": "Operations", "displayName": "Operations", "description": "Infrastructure and on-call", "private": true, "color": "#f2994a", "icon": "Server", "timezone": "America/Chicago", "cyclesEnabled": true, "cycleDuration": 1, "triageEnabled": true, "issueEstimationType": "linear", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2026-10-02T09:00:00.000Z" }
+  ],
+  "workflowStates": [
+    { "id": "s-eng-backlog", "name": "Backlog", "type": "backlog", "teamId": "t-eng", "position": 0, "color": "#bec2c8", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-eng-todo", "name": "Todo", "type": "unstarted", "teamId": "t-eng", "position": 1, "color": "#e2e2e2", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-eng-progress", "name": "In Progress", "type": "started", "teamId": "t-eng", "position": 2, "color": "#f2c94c", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-eng-review", "name": "In Review", "type": "started", "teamId": "t-eng", "position": 3, "color": "#0f783c", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-eng-done", "name": "Done", "type": "completed", "teamId": "t-eng", "position": 4, "color": "#5e6ad2", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-eng-canceled", "name": "Canceled", "type": "canceled", "teamId": "t-eng", "position": 5, "color": "#95a2b3", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-eng-duplicate", "name": "Duplicate", "type": "canceled", "teamId": "t-eng", "position": 6, "color": "#95a2b3", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "s-ops-triage", "name": "Triage", "type": "triage", "teamId": "t-ops", "position": 0, "color": "#fc7840", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2025-02-01T09:00:00.000Z" },
+    { "id": "s-ops-todo", "name": "Todo", "type": "unstarted", "teamId": "t-ops", "position": 1, "color": "#e2e2e2", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2025-02-01T09:00:00.000Z" },
+    { "id": "s-ops-progress", "name": "In Progress", "type": "started", "teamId": "t-ops", "position": 2, "color": "#f2c94c", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2025-02-01T09:00:00.000Z" },
+    { "id": "s-ops-done", "name": "Done", "type": "completed", "teamId": "t-ops", "position": 3, "color": "#5e6ad2", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2025-02-01T09:00:00.000Z" },
+    { "id": "s-ops-canceled", "name": "Canceled", "type": "canceled", "teamId": "t-ops", "position": 4, "color": "#95a2b3", "createdAt": "2025-02-01T09:00:00.000Z", "updatedAt": "2025-02-01T09:00:00.000Z" }
+  ],
+  "labels": [
+    { "id": "l-bug", "name": "Bug", "color": "#eb5757", "isGroup": false, "description": "Something is broken", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "l-feature", "name": "Feature", "color": "#bb87fc", "isGroup": false, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "l-perf", "name": "Performance", "color": "#4cb782", "isGroup": false, "teamId": "t-eng", "createdAt": "2025-01-12T09:00:00.000Z", "updatedAt": "2025-01-12T09:00:00.000Z" },
+    { "id": "l-infra", "name": "Infra", "color": "#f2994a", "isGroup": false, "teamId": "t-ops", "createdAt": "2025-02-02T09:00:00.000Z", "updatedAt": "2025-02-02T09:00:00.000Z" },
+    { "id": "l-area", "name": "Area", "color": "#26b5ce", "isGroup": true, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "l-area-api", "name": "API", "color": "#26b5ce", "isGroup": false, "parentId": "l-area", "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" }
+  ],
+  "projectStatuses": [
+    { "id": "ps-planned", "name": "Planned", "type": "planned", "color": "#e2e2e2", "position": 1, "indefinite": false, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "ps-started", "name": "In Progress", "type": "started", "color": "#f2c94c", "position": 2, "indefinite": false, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" }
+  ],
+  "projects": [
+    { "id": "p-apollo", "name": "Apollo", "slugId": "apollo-1a2b", "description": "New sign-in experience", "state": "started", "statusId": "ps-started", "health": "onTrack", "healthUpdatedAt": "2026-11-03T10:00:00.000Z", "priority": 1, "priorityLabel": "Urgent", "progress": 0.4, "leadId": "u-ada", "creatorId": "u-grace", "teamIds": ["t-eng"], "startDate": "2026-10-01", "targetDate": "2026-12-15", "startedAt": "2026-10-01T09:00:00.000Z", "url": "https://linear.app/acme/project/apollo-1a2b", "createdAt": "2026-09-20T09:00:00.000Z", "updatedAt": "2026-11-12T09:00:00.000Z" },
+    { "id": "p-hermes", "name": "Hermes", "slugId": "hermes-3c4d", "description": "Platform migration", "state": "planned", "statusId": "ps-planned", "health": "atRisk", "healthUpdatedAt": "2026-11-05T10:00:00.000Z", "priority": 2, "priorityLabel": "High", "progress": 0.1, "leadId": "u-grace", "creatorId": "u-ada", "teamIds": ["t-eng", "t-ops"], "targetDate": "2027-01-31", "url": "https://linear.app/acme/project/hermes-3c4d", "createdAt": "2026-09-25T09:00:00.000Z", "updatedAt": "2026-11-13T09:00:00.000Z" }
+  ],
+  "projectMilestones": [
+    { "id": "m-apollo-alpha", "name": "Alpha", "projectId": "p-apollo", "status": "done", "progress": 1, "targetDate": "2026-10-20", "sortOrder": 1, "createdAt": "2026-09-21T09:00:00.000Z", "updatedAt": "2026-10-20T09:00:00.000Z" },
+    { "id": "m-apollo-beta", "name": "Beta", "projectId": "p-apollo", "status": "next", "progress": 0.3, "targetDate": "2026-11-30", "sortOrder": 2, "createdAt": "2026-09-21T09:00:00.000Z", "updatedAt": "2026-11-10T09:00:00.000Z" },
+    { "id": "m-hermes-mvp", "name": "MVP", "projectId": "p-hermes", "status": "unstarted", "progress": 0, "targetDate": "2026-12-31", "sortOrder": 1, "createdAt": "2026-09-26T09:00:00.000Z", "updatedAt": "2026-09-26T09:00:00.000Z" }
+  ],
+  "projectUpdates": [
+    { "id": "pu-1", "projectId": "p-apollo", "health": "onTrack", "body": "Alpha shipped; SSO in progress.", "userId": "u-ada", "commentCount": 1, "isStale": false, "url": "https://linear.app/acme/project/apollo-1a2b/updates#pu-1", "createdAt": "2026-11-03T10:00:00.000Z", "updatedAt": "2026-11-03T10:00:00.000Z" },
+    { "id": "pu-2", "projectId": "p-hermes", "health": "atRisk", "body": "Vendor contract delayed.", "userId": "u-grace", "commentCount": 0, "isStale": false, "url": "https://linear.app/acme/project/hermes-3c4d/updates#pu-2", "createdAt": "2026-11-05T10:00:00.000Z", "updatedAt": "2026-11-05T10:00:00.000Z" },
+    { "id": "pu-3", "projectId": "p-apollo", "health": "offTrack", "body": "Safari crash blocks alpha.", "userId": "u-ada", "commentCount": 0, "isStale": true, "url": "https://linear.app/acme/project/apollo-1a2b/updates#pu-3", "createdAt": "2026-10-20T10:00:00.000Z", "updatedAt": "2026-10-20T10:00:00.000Z" }
+  ],
+  "cycles": [
+    { "id": "c-eng-41", "number": 41, "name": "Sprint 41", "teamId": "t-eng", "startsAt": "2026-10-20T00:00:00.000Z", "endsAt": "2026-11-03T00:00:00.000Z", "completedAt": "2026-11-03T00:00:00.000Z", "isActive": false, "isFuture": false, "isPast": true, "isNext": false, "isPrevious": true, "progress": 1, "createdAt": "2026-10-01T00:00:00.000Z", "updatedAt": "2026-11-03T00:00:00.000Z" },
+    { "id": "c-eng-42", "number": 42, "teamId": "t-eng", "startsAt": "2026-11-03T00:00:00.000Z", "endsAt": "2026-11-17T00:00:00.000Z", "isActive": true, "isFuture": false, "isPast": false, "isNext": false, "isPrevious": false, "progress": 0.35, "createdAt": "2026-10-01T00:00:00.000Z", "updatedAt": "2026-11-12T00:00:00.000Z" },
+    { "id": "c-eng-43", "number": 43, "teamId": "t-eng", "startsAt": "2026-11-17T00:00:00.000Z", "endsAt": "2026-12-01T00:00:00.000Z", "isActive": false, "isFuture": true, "isPast": false, "isNext": true, "isPrevious": false, "progress": 0, "createdAt": "2026-10-01T00:00:00.000Z", "updatedAt": "2026-10-01T00:00:00.000Z" },
+    { "id": "c-ops-7", "number": 7, "teamId": "t-ops", "startsAt": "2026-11-09T00:00:00.000Z", "endsAt": "2026-11-16T00:00:00.000Z", "isActive": true, "isFuture": false, "isPast": false, "isNext": false, "isPrevious": false, "progress": 0.5, "createdAt": "2026-10-01T00:00:00.000Z", "updatedAt": "2026-11-12T00:00:00.000Z" }
+  ],
+  "initiatives": [
+    { "id": "i-launch", "name": "Q4 Launch", "description": "Ship the new sign-in and platform", "status": "Active", "health": "onTrack", "ownerId": "u-ada", "creatorId": "u-ada", "targetDate": "2026-12-31", "projectIds": ["p-apollo", "p-hermes"], "url": "https://linear.app/acme/initiative/q4-launch", "startedAt": "2026-10-01T09:00:00.000Z", "createdAt": "2026-09-15T09:00:00.000Z", "updatedAt": "2026-11-10T09:00:00.000Z" },
+    { "id": "i-reliability", "name": "Reliability", "status": "Planned", "ownerId": "u-kat", "creatorId": "u-grace", "projectIds": [], "url": "https://linear.app/acme/initiative/reliability", "createdAt": "2026-10-15T09:00:00.000Z", "updatedAt": "2026-10-15T09:00:00.000Z" }
+  ],
+  "roadmaps": [
+    { "id": "r-2026", "name": "2026 Roadmap", "description": "Everything planned for 2026", "slugId": "2026-roadmap", "ownerId": "u-grace", "creatorId": "u-grace", "projectIds": ["p-apollo", "p-hermes"], "url": "https://linear.app/acme/roadmap/2026-roadmap", "createdAt": "2025-12-01T09:00:00.000Z", "updatedAt": "2026-09-01T09:00:00.000Z" }
+  ],
+  "customerStatuses": [
+    { "id": "cs-active", "name": "Active", "displayName": "Active", "color": "#4cb782", "position": 1, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" }
+  ],
+  "customerTiers": [
+    { "id": "ct-enterprise", "name": "Enterprise", "displayName": "Enterprise", "color": "#5e6ad2", "position": 1, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" },
+    { "id": "ct-startup", "name": "Startup", "displayName": "Startup", "color": "#bec2c8", "position": 2, "createdAt": "2025-01-10T09:00:00.000Z", "updatedAt": "2025-01-10T09:00:00.000Z" }
+  ],
+  "customers": [
+    { "id": "cu-globex", "name": "Globex", "domains": ["globex.example"], "externalIds": ["sf-001"], "revenue": 120000, "size": 5000, "statusId": "cs-active", "tierId": "ct-enterprise", "ownerId": "u-grace", "approximateNeedCount": 2, "slugId": "globex", "url": "https://linear.app/acme/customer/globex", "createdAt": "2026-01-10T09:00:00.000Z", "updatedAt": "2026-11-01T09:00:00.000Z" },
+    { "id": "cu-initech", "name": "Initech", "domains": ["initech.example"], "externalIds": [], "revenue": 30000, "size": 200, "statusId": "cs-active", "tierId": "ct-startup", "approximateNeedCount": 1, "slugId": "initech", "url": "https://linear.app/acme/customer/initech", "createdAt": "2026-02-10T09:00:00.000Z", "updatedAt": "2026-11-02T09:00:00.000Z" }
+  ],
+  "customerNeeds": [
+    { "id": "cn-1", "customerId": "cu-globex", "issueId": "i-eng-2", "priority": 1, "body": "We need SAML SSO before renewal.", "creatorId": "u-grace", "url": "https://acme.zendesk.example/tickets/101", "createdAt": "2026-10-26T09:00:00.000Z", "updatedAt": "2026-10-26T09:00:00.000Z" },
+    { "id": "cn-2", "customerId": "cu-initech", "issueId": "i-eng-2", "priority": 0, "body": "SSO would help our IT team.", "creatorId": "u-ada", "createdAt": "2026-10-28T09:00:00.000Z", "updatedAt": "2026-10-28T09:00:00.000Z" },
+    { "id": "cn-3", "customerId": "cu-globex", "projectId": "p-hermes", "priority": 0, "body": "Interested in the migration timeline.", "creatorId": "u-grace", "createdAt": "2026-11-02T09:00:00.000Z", "updatedAt": "2026-11-02T09:00:00.000Z" }
+  ],
+  "auditEntries": [
+    { "id": "a-1", "type": "user.login", "createdAt": "2026-11-10T08:00:00.000Z", "updatedAt": "2026-11-10T08:00:00.000Z", "actorId": "u-ada", "ip": "203.0.113.5", "countryCode": "GB", "metadata": { "method": "google" }, "requestInformation": { "userAgent": "Mozilla/5.0" } },
+    { "id": "a-2", "type": "user.login", "createdAt": "2026-11-11T13:00:00.000Z", "updatedAt": "2026-11-11T13:00:00.000Z", "actorId": "u-grace", "ip": "198.51.100.7", "countryCode": "US", "metadata": { "method": "saml" }, "requestInformation": { "userAgent": "Mozilla/5.0" } },
+    { "id": "a-3", "type": "apiKey.created", "createdAt": "2026-11-12T09:30:00.000Z", "updatedAt": "2026-11-12T09:30:00.000Z", "actorId": "u-ada", "ip": "203.0.113.5", "countryCode": "GB", "metadata": { "label": "vgi" }, "requestInformation": {} }
+  ],
+  "issues": [
+    { "id": "i-eng-1", "identifier": "ENG-1", "number": 1, "teamId": "t-eng", "title": "Login page crashes on Safari", "stateId": "s-eng-done", "priority": 1, "priorityLabel": "Urgent", "estimate": 3, "assigneeId": "u-ada", "creatorId": "u-grace", "labelIds": ["l-bug"], "projectId": "p-apollo", "projectMilestoneId": "m-apollo-alpha", "cycleId": "c-eng-41", "description": "Safari 18 throws on **submit**.", "url": "https://linear.app/acme/issue/ENG-1/login-page-crashes-on-safari", "branchName": "ada/eng-1-login-page-crashes-on-safari", "createdAt": "2026-10-21T09:00:00.000Z", "updatedAt": "2026-10-24T16:00:00.000Z", "startedAt": "2026-10-22T10:00:00.000Z", "completedAt": "2026-10-24T16:00:00.000Z" },
+    { "id": "i-eng-2", "identifier": "ENG-2", "number": 2, "teamId": "t-eng", "title": "Add SSO with SAML", "stateId": "s-eng-progress", "priority": 2, "priorityLabel": "High", "estimate": 5, "assigneeId": "u-grace", "creatorId": "u-ada", "labelIds": ["l-feature", "l-area-api"], "projectId": "p-apollo", "projectMilestoneId": "m-apollo-beta", "cycleId": "c-eng-42", "dueDate": "2026-11-28", "description": "Enterprise customers need SAML.", "url": "https://linear.app/acme/issue/ENG-2/add-sso-with-saml", "branchName": "grace/eng-2-add-sso-with-saml", "createdAt": "2026-10-25T09:00:00.000Z", "updatedAt": "2026-11-10T11:00:00.000Z", "startedAt": "2026-11-04T09:00:00.000Z" },
+    { "id": "i-eng-3", "identifier": "ENG-3", "number": 3, "teamId": "t-eng", "title": "Slow dashboard queries", "stateId": "s-eng-review", "priority": 2, "priorityLabel": "High", "estimate": 8, "assigneeId": "u-ada", "creatorId": "u-kat", "labelIds": ["l-perf", "l-bug"], "projectId": "p-apollo", "cycleId": "c-eng-42", "description": "p95 is 4s.", "url": "https://linear.app/acme/issue/ENG-3/slow-dashboard-queries", "branchName": "ada/eng-3-slow-dashboard-queries", "createdAt": "2026-10-28T09:00:00.000Z", "updatedAt": "2026-11-12T15:00:00.000Z", "startedAt": "2026-11-05T09:00:00.000Z" },
+    { "id": "i-eng-4", "identifier": "ENG-4", "number": 4, "teamId": "t-eng", "title": "Dark mode", "stateId": "s-eng-backlog", "priority": 4, "priorityLabel": "Low", "creatorId": "u-kat", "labelIds": ["l-feature"], "url": "https://linear.app/acme/issue/ENG-4/dark-mode", "branchName": "eng-4-dark-mode", "createdAt": "2026-11-01T09:00:00.000Z", "updatedAt": "2026-11-01T09:00:00.000Z" },
+    { "id": "i-eng-5", "identifier": "ENG-5", "number": 5, "teamId": "t-eng", "title": "Safari login error", "stateId": "s-eng-duplicate", "priority": 0, "priorityLabel": "No priority", "creatorId": "u-alan", "labelIds": ["l-bug"], "url": "https://linear.app/acme/issue/ENG-5/safari-login-error", "branchName": "eng-5-safari-login-error", "createdAt": "2026-10-22T08:00:00.000Z", "updatedAt": "2026-10-23T09:00:00.000Z", "canceledAt": "2026-10-23T09:00:00.000Z" },
+    { "id": "i-eng-6", "identifier": "ENG-6", "number": 6, "teamId": "t-eng", "title": "Upgrade Node runtime", "stateId": "s-eng-todo", "priority": 3, "priorityLabel": "Medium", "estimate": 2, "assigneeId": "u-kat", "creatorId": "u-ada", "labelIds": [], "projectId": "p-hermes", "cycleId": "c-eng-42", "url": "https://linear.app/acme/issue/ENG-6/upgrade-node-runtime", "branchName": "kat/eng-6-upgrade-node-runtime", "createdAt": "2026-11-06T09:00:00.000Z", "updatedAt": "2026-11-08T09:00:00.000Z" },
+    { "id": "i-eng-7", "identifier": "ENG-7", "number": 7, "teamId": "t-eng", "title": "SAML metadata endpoint", "stateId": "s-eng-todo", "priority": 2, "priorityLabel": "High", "estimate": 1, "assigneeId": "u-grace", "creatorId": "u-grace", "labelIds": ["l-area-api"], "projectId": "p-apollo", "projectMilestoneId": "m-apollo-beta", "cycleId": "c-eng-42", "parentId": "i-eng-2", "url": "https://linear.app/acme/issue/ENG-7/saml-metadata-endpoint", "branchName": "grace/eng-7-saml-metadata-endpoint", "createdAt": "2026-11-07T09:00:00.000Z", "updatedAt": "2026-11-09T09:00:00.000Z" },
+    { "id": "i-eng-8", "identifier": "ENG-8", "number": 8, "teamId": "t-eng", "title": "Spike: GraphQL federation", "stateId": "s-eng-canceled", "priority": 0, "priorityLabel": "No priority", "creatorId": "u-alan", "labelIds": [], "url": "https://linear.app/acme/issue/ENG-8/spike-graphql-federation", "branchName": "eng-8-spike-graphql-federation", "createdAt": "2026-09-15T09:00:00.000Z", "updatedAt": "2026-10-01T09:00:00.000Z", "canceledAt": "2026-09-20T09:00:00.000Z", "archivedAt": "2026-10-01T09:00:00.000Z" },
+    { "id": "i-ops-1", "identifier": "OPS-1", "number": 1, "teamId": "t-ops", "title": "Rotate TLS certificates", "stateId": "s-ops-done", "priority": 1, "priorityLabel": "Urgent", "estimate": 2, "assigneeId": "u-kat", "creatorId": "u-kat", "labelIds": ["l-infra"], "projectId": "p-hermes", "cycleId": "c-ops-7", "url": "https://linear.app/acme/issue/OPS-1/rotate-tls-certificates", "branchName": "kat/ops-1-rotate-tls-certificates", "createdAt": "2026-10-30T09:00:00.000Z", "updatedAt": "2026-11-02T17:00:00.000Z", "startedAt": "2026-11-01T09:00:00.000Z", "completedAt": "2026-11-02T17:00:00.000Z", "triagedAt": "2026-10-31T09:00:00.000Z" },
+    { "id": "i-ops-2", "identifier": "OPS-2", "number": 2, "teamId": "t-ops", "title": "Pager alert noise", "stateId": "s-ops-triage", "priority": 0, "priorityLabel": "No priority", "creatorId": "u-grace", "labelIds": ["l-infra", "l-bug"], "url": "https://linear.app/acme/issue/OPS-2/pager-alert-noise", "branchName": "ops-2-pager-alert-noise", "createdAt": "2026-11-11T09:00:00.000Z", "updatedAt": "2026-11-11T09:00:00.000Z" },
+    { "id": "i-ops-3", "identifier": "OPS-3", "number": 3, "teamId": "t-ops", "title": "Backup restore drill", "stateId": "s-ops-progress", "priority": 3, "priorityLabel": "Medium", "estimate": 3, "assigneeId": "u-alan", "creatorId": "u-ada", "labelIds": [], "projectId": "p-hermes", "url": "https://linear.app/acme/issue/OPS-3/backup-restore-drill", "branchName": "alan/ops-3-backup-restore-drill", "createdAt": "2026-11-02T09:00:00.000Z", "updatedAt": "2026-11-13T09:00:00.000Z", "startedAt": "2026-11-09T09:00:00.000Z", "triagedAt": "2026-11-03T09:00:00.000Z" }
+  ],
+  "issueHistory": [
+    { "id": "h-1", "issueId": "i-eng-1", "createdAt": "2026-10-21T09:00:00.000Z", "actorId": "u-grace", "toStateId": "s-eng-todo", "addedLabelIds": ["l-bug"] },
+    { "id": "h-2", "issueId": "i-eng-1", "createdAt": "2026-10-21T09:05:00.000Z", "actorId": "u-grace", "toAssigneeId": "u-ada" },
+    { "id": "h-3", "issueId": "i-eng-1", "createdAt": "2026-10-22T10:00:00.000Z", "actorId": "u-ada", "fromStateId": "s-eng-todo", "toStateId": "s-eng-progress" },
+    { "id": "h-4", "issueId": "i-eng-1", "createdAt": "2026-10-23T12:00:00.000Z", "actorId": "u-ada", "fromEstimate": 2, "toEstimate": 3, "updatedDescription": true },
+    { "id": "h-5", "issueId": "i-eng-1", "createdAt": "2026-10-24T16:00:00.000Z", "actorId": "u-ada", "fromStateId": "s-eng-progress", "toStateId": "s-eng-done" },
+    { "id": "h-6", "issueId": "i-eng-2", "createdAt": "2026-10-25T09:00:00.000Z", "actorId": "u-ada", "toStateId": "s-eng-backlog" },
+    { "id": "h-7", "issueId": "i-eng-2", "createdAt": "2026-11-04T09:00:00.000Z", "actorId": "u-grace", "fromStateId": "s-eng-backlog", "toStateId": "s-eng-progress", "fromPriority": 3, "toPriority": 2 },
+    { "id": "h-8", "issueId": "i-eng-3", "createdAt": "2026-10-28T09:00:00.000Z", "actorId": "u-kat", "toStateId": "s-eng-todo" },
+    { "id": "h-9", "issueId": "i-eng-3", "createdAt": "2026-11-05T09:00:00.000Z", "actorId": "u-ada", "fromStateId": "s-eng-todo", "toStateId": "s-eng-progress" },
+    { "id": "h-10", "issueId": "i-eng-3", "createdAt": "2026-11-12T15:00:00.000Z", "actorId": "u-ada", "fromStateId": "s-eng-progress", "toStateId": "s-eng-review", "removedLabelIds": [], "addedLabelIds": ["l-perf"] },
+    { "id": "h-11", "issueId": "i-eng-5", "createdAt": "2026-10-23T09:00:00.000Z", "actorId": "u-ada", "fromStateId": "s-eng-todo", "toStateId": "s-eng-duplicate" },
+    { "id": "h-12", "issueId": "i-ops-1", "createdAt": "2026-10-30T09:00:00.000Z", "actorId": "u-kat", "toStateId": "s-ops-triage" },
+    { "id": "h-13", "issueId": "i-ops-1", "createdAt": "2026-10-31T09:00:00.000Z", "actorId": "u-kat", "fromStateId": "s-ops-triage", "toStateId": "s-ops-todo" },
+    { "id": "h-14", "issueId": "i-ops-1", "createdAt": "2026-11-01T09:00:00.000Z", "actorId": "u-kat", "fromStateId": "s-ops-todo", "toStateId": "s-ops-progress" },
+    { "id": "h-15", "issueId": "i-ops-1", "createdAt": "2026-11-02T17:00:00.000Z", "fromStateId": "s-ops-progress", "toStateId": "s-ops-done", "autoClosed": false }
+  ],
+  "comments": [
+    { "id": "cm-1", "issueId": "i-eng-1", "body": "Reproduced on **Safari 18.1**.", "userId": "u-ada", "url": "https://linear.app/acme/issue/ENG-1#comment-cm1", "createdAt": "2026-10-22T09:30:00.000Z", "updatedAt": "2026-10-22T09:30:00.000Z" },
+    { "id": "cm-2", "issueId": "i-eng-1", "body": "Thanks! Fix looks good.", "userId": "u-grace", "parentId": "cm-1", "url": "https://linear.app/acme/issue/ENG-1#comment-cm2", "createdAt": "2026-10-24T15:00:00.000Z", "updatedAt": "2026-10-24T15:00:00.000Z", "resolvedAt": "2026-10-24T16:00:00.000Z" },
+    { "id": "cm-3", "issueId": "i-eng-2", "body": "Globex needs this before renewal.", "userId": "u-kat", "url": "https://linear.app/acme/issue/ENG-2#comment-cm3", "createdAt": "2026-10-26T10:00:00.000Z", "updatedAt": "2026-10-27T10:00:00.000Z", "editedAt": "2026-10-27T10:00:00.000Z" },
+    { "id": "cm-4", "issueId": "i-ops-1", "body": "Certificates rotated in all regions.", "userId": "u-kat", "url": "https://linear.app/acme/issue/OPS-1#comment-cm4", "createdAt": "2026-11-02T16:00:00.000Z", "updatedAt": "2026-11-02T16:00:00.000Z" },
+    { "id": "cm-5", "body": "Great progress!", "userId": "u-grace", "projectUpdateId": "pu-1", "url": "https://linear.app/acme/project/apollo-1a2b/updates#comment-cm5", "createdAt": "2026-11-03T11:00:00.000Z", "updatedAt": "2026-11-03T11:00:00.000Z" }
+  ],
+  "attachments": [
+    { "id": "at-1", "issueId": "i-eng-1", "title": "Fix Safari crash #412", "subtitle": "Merged", "url": "https://github.com/acme/web/pull/412", "sourceType": "github", "creatorId": "u-ada", "metadata": { "state": "merged", "number": 412 }, "createdAt": "2026-10-23T10:00:00.000Z", "updatedAt": "2026-10-24T16:00:00.000Z" },
+    { "id": "at-2", "issueId": "i-eng-1", "title": "Sentry: TypeError in login.js", "url": "https://sentry.example/acme/issues/77", "sourceType": "sentry", "creatorId": "u-grace", "metadata": { "events": 1830 }, "createdAt": "2026-10-21T09:10:00.000Z", "updatedAt": "2026-10-21T09:10:00.000Z" },
+    { "id": "at-3", "issueId": "i-eng-2", "title": "SSO flows", "url": "https://www.figma.com/file/abc/sso", "sourceType": "figma", "creatorId": "u-grace", "metadata": {}, "createdAt": "2026-10-26T09:00:00.000Z", "updatedAt": "2026-10-26T09:00:00.000Z" }
+  ],
+  "issueRelations": [
+    { "id": "rel-1", "type": "duplicate", "issueId": "i-eng-5", "relatedIssueId": "i-eng-1", "createdAt": "2026-10-23T09:00:00.000Z", "updatedAt": "2026-10-23T09:00:00.000Z" },
+    { "id": "rel-2", "type": "blocks", "issueId": "i-eng-3", "relatedIssueId": "i-eng-2", "createdAt": "2026-11-05T09:00:00.000Z", "updatedAt": "2026-11-05T09:00:00.000Z" },
+    { "id": "rel-3", "type": "related", "issueId": "i-ops-3", "relatedIssueId": "i-eng-6", "createdAt": "2026-11-09T09:00:00.000Z", "updatedAt": "2026-11-09T09:00:00.000Z" }
+  ]
+}

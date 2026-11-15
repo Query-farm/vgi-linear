@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A VGI worker for DuckDB, generated from the Query.Farm VGI starter template.",
+  "description": "Linear issue tracking (issues, history, comments, projects, cycles, initiatives, customers) as SQL tables in DuckDB.",
   "license": "0BSD",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -16,6 +16,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
     "@types/bun": "^1.3.0",
+    "graphql": "^16.15.0",
     "typescript": "^5.9.0"
   }
 }

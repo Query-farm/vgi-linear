@@ -23,18 +23,19 @@ Faster loops while iterating: `make test-unit`, `make test-sql`, `make lint-expl
 ```
 src/
   worker.ts        # entry point: serves the catalog over stdio, --unix or --http
-  catalog.ts       # assembles the catalog; add new functions to FUNCTIONS
+  catalog.ts       # assembles the catalog and the `linear` secret type
   meta.ts          # catalog/schema metadata + helpers (objectTags, column)
-  greet.ts         # scalar example (overloads, const param with choices)
-  sequence.ts      # table function example (named args, streaming state)
-  fetch_items.ts   # REST API table function (pagination, retries, secrets)
+  linear/client.ts   # linear secret -> auth header, read-only guard, rate limits, retries
+  linear/pushdown.ts # SQL filters -> Linear filter inputs (IssueFilter, TeamFilter, ...)
+  linear/table.ts    # generic GraphQL connection table function (projection, paging, fan-out)
+  linear/resources.ts# one spec per Linear object (columns + selections, filters, docs)
   cli.ts           # flag parsing: stdio / --unix / --http (PORT:<n>, /health)
   log.ts           # stderr logger
-bin/               # vgi-linear-worker (what DuckDB launches) and run-recipe
-tests/             # bun unit tests (worker subprocess + mock API)
+bin/               # vgi-linear-worker (what DuckDB launches)
+tests/             # bun unit tests (incl. validating every generated query against the schema)
 test/sql/          # sqllogictest files run through DuckDB
-test/mock_api/     # offline mock of the REST API used by tests
-examples/          # recipes: pushdown, caching, catalog tables, aggregates, COPY …
+test/mock_api/     # strict GraphQL server: schema validation, filter evaluation, complexity, request log
+test/fixtures/     # workspace.json (the fixture workspace) + vendored public Linear schema (MIT)
 ci/                # integration harness used by `make test-sql` and CI
 scripts/           # vgi_template.py (init / template-diff)
 vgi-agent-tests.yaml  # private graders for the agent test tasks
@@ -42,8 +43,9 @@ vgi-agent-tests.yaml  # private graders for the agent test tasks
 
 ## Recipe: add a function
 
-1. Create `src/<name>.ts`. Copy the closest example: `greet.ts` for a scalar,
-   `sequence.ts` for a generator, `fetch_items.ts` for an API.
+1. For a new Linear connection add a `defineLinearTable` / `defineLinearCatalogTable`
+   spec to `src/linear/resources.ts` (columns with their GraphQL paths, filter map, docs)
+   and fixture rows to `test/fixtures/workspace.json`; for anything else create `src/<name>.ts`.
 2. Declare arguments: `params` + `argDocs` (scalars), or the ordered `parameters`
    list when a constant needs `choices`/`ge`/`le`. Table functions use `args`,
    `argDocs` and `argConstraints`; an argument listed in `argDefaults` becomes a
@@ -102,7 +104,7 @@ reviewed. It's optional, so run it before publishing.
 | write data out to a file or service | `COPY … TO` copy function |
 | accept INSERT / UPDATE / DELETE | writable catalog table: `TableDescriptor.insertFunction` / `updateFunction` / `deleteFunction` |
 
-Recipes for most kinds are in `examples/`. Writable tables have no recipe:
+Recipes for most kinds are in the starter's `examples/` (removed here). Writable tables have no recipe:
 
 A writable table is a `TableDescriptor` that names a table in-out function per operation in
 `insertFunction`, `updateFunction` and `deleteFunction`, with the richest result each one
@@ -135,8 +137,8 @@ and `examples/writable-tx-worker.ts` in vgi-typescript are complete workers.
 - **State must be serializable.** Table-function state (`initialState`/`process`) must be a plain object of numbers, bigints, strings, booleans, arrays or nested plain objects (no `Date`, `Map` or class instances): the SDK infers an Arrow schema for it and serializes it. Over HTTP each batch can be served by a different process, so the cursor travels with the request. Keep it small, and never put secrets in it.
 - **Examples must be deterministic.** Add `ORDER BY`, and no `now()`, random values or
   network. Examples that hit a live API go in `examples`, not `executable_examples`.
-- **Credentials.** Read them from a DuckDB secret first (`CREATE SECRET (TYPE linear_api, …)`),
-  then from an environment variable. Never put them in logs, examples or the repo, and
+- **Credentials.** Read them from the DuckDB secret (`CREATE SECRET (TYPE linear, …)`) only;
+  this worker never reads environment variables. Never put them in logs, examples or the repo, and
   keep them out of table-function state unless the state rule above says
   the SDK encrypts it. Workers that need real credentials set `execute: false` on the metadata check.
 - **Errors.** Raise errors with a clear message. For HTTP failures, include the status

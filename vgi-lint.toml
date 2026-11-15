@@ -7,7 +7,7 @@
 location = "bin/vgi-linear-worker"
 
 # Fail on warnings while you build. Raise this to "info" before you publish the worker.
-fail_on = "warning"
+fail_on = "info"
 
 # Waive a finding only with a kind and a reason, so the waiver can be audited:
 #   domain-exemption  permanent and legitimate for this worker
@@ -22,3 +22,18 @@ ignore = [
 #   vgi-lint lint --baseline vgi-lint-baseline --update-baseline
 # and uncomment the next line. Only new findings fail after that.
 # baseline = "vgi-lint-baseline"
+
+# The *_id columns below do reference those tables, but the tables list only active
+# (non-archived) objects, as the Linear app does, while a reference can point at an
+# archived project or team. An ENFORCED + ALL_ROWS foreign key would therefore be false,
+# so none is declared; the joins are documented in each object's doc_llm instead.
+[per_object."linear.main.customer_needs"]
+ignore = [{ code = "VGI808", kind = "domain-exemption", reason = "project_id / customer_id may point at archived projects or customers, which the tables omit" }]
+[per_object."linear.main.cycles"]
+ignore = [{ code = "VGI808", kind = "domain-exemption", reason = "team_id may point at an archived team, which the teams table omits" }]
+[per_object."linear.main.project_milestones"]
+ignore = [{ code = "VGI808", kind = "domain-exemption", reason = "project_id may point at an archived project, which the projects table omits" }]
+[per_object."linear.main.project_updates"]
+ignore = [{ code = "VGI808", kind = "domain-exemption", reason = "project_id may point at an archived project, which the projects table omits" }]
+[per_object."linear.main.workflow_states"]
+ignore = [{ code = "VGI808", kind = "domain-exemption", reason = "team_id may point at an archived team, which the teams table omits" }]

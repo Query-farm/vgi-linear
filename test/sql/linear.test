@@ -1,148 +1,641 @@
 # name: test/sql/linear.test
-# description: SQL-level tests for the linear worker, run through DuckDB by ci/run-integration.sh
+# description: SQL tests for the linear worker against the offline Linear GraphQL server (test/mock_api/server.ts)
 # group: [linear]
-# managed-by: vgi-starters (edit upstream in shared/, then run tools/render.py)
 
 require vgi
 
 require-env LINEAR_WORKER
 
-require-env LINEAR_MOCK_API
+require-env LINEAR_FIXTURE_URL
 
-require-env LINEAR_MOCK_API_AUTH
+# httpfs + json read the mock server's /__requests log to assert what was pushed down.
+statement ok
+LOAD httpfs;
+
+statement ok
+LOAD json;
 
 statement ok
 ATTACH 'linear' (TYPE vgi, LOCATION '{LINEAR_WORKER}');
 
-# ---------------------------------------------------------------- greet (scalar)
+# ---------------------------------------------------------------- secret errors
 
-query T
-SELECT linear.main.greet('Ada');
-----
-Hi, Ada!
-
-query T
-SELECT linear.main.greet('Ada', 'formal');
-----
-Good day, Ada.
-
-# NULL in, NULL out.
-query T
-SELECT linear.main.greet(NULL);
-----
-NULL
-
-# Works over a whole column, one result per row.
-query T
-SELECT linear.main.greet(name) FROM (VALUES ('Ada'), ('Grace'), (NULL)) AS t(name) ORDER BY ALL NULLS LAST;
-----
-Hi, Ada!
-Hi, Grace!
-NULL
-
-# `style` is constrained to 'casual' | 'formal' and checked when the query is bound.
-# (No expected message: each SDK words constraint errors its own way.)
 statement error
-SELECT linear.main.greet('Ada', 'loud');
+SELECT count(*) FROM linear.main.issues();
 ----
-<REGEX>:.*
+<REGEX>:.*no linear secret.*
 
-# ------------------------------------------------------ sequence_table (table fn)
+statement ok
+CREATE SECRET linear_bad (TYPE linear, API_KEY 'lin_api_wrong', BASE_URL '{LINEAR_FIXTURE_URL}/graphql');
 
+statement error
+SELECT count(*) FROM linear.main.issues();
+----
+<REGEX>:.*HTTP 400.*AUTHENTICATION_ERROR.*
+
+statement ok
+DROP SECRET linear_bad;
+
+statement ok
+CREATE SECRET linear_insecure (TYPE linear, API_KEY 'x', BASE_URL 'http://api.example.com/graphql');
+
+statement error
+SELECT count(*) FROM linear.main.teams;
+----
+<REGEX>:.*https.*
+
+statement ok
+DROP SECRET linear_insecure;
+
+statement ok
+CREATE SECRET linear_admin (TYPE linear, API_KEY 'lin_api_admin', BASE_URL '{LINEAR_FIXTURE_URL}/graphql');
+
+# ------------------------------------------------------------------------ issues
+
+# Archived issues (ENG-8) are left out unless asked for, as in the Linear app.
+query TTTTT
+SELECT key, repo, title, state, status FROM linear.main.issues() ORDER BY key;
+----
+ENG-1	ENG	Login page crashes on Safari	closed	Done
+ENG-2	ENG	Add SSO with SAML	open	In Progress
+ENG-3	ENG	Slow dashboard queries	open	In Review
+ENG-4	ENG	Dark mode	open	Backlog
+ENG-5	ENG	Safari login error	closed	Duplicate
+ENG-6	ENG	Upgrade Node runtime	open	Todo
+ENG-7	ENG	SAML metadata endpoint	open	Todo
+OPS-1	OPS	Rotate TLS certificates	closed	Done
+OPS-2	OPS	Pager alert noise	open	Triage
+OPS-3	OPS	Backup restore drill	open	In Progress
+
+query IT
+SELECT count(*), max(key) FILTER (WHERE archived_at IS NOT NULL) FROM linear.main.issues(include_archived := true);
+----
+11	ENG-8
+
+# Several pages: the relay cursor carries across batches.
 query II
-SELECT n, squared FROM linear.main.sequence_table(4) ORDER BY n;
+SELECT count(*), count(DISTINCT key) FROM linear.main.issues(page_size := 3);
 ----
-0	0
-1	1
-2	4
-3	9
+10	10
 
-# Named argument with a default.
 query I
-SELECT n FROM linear.main.sequence_table(3, step := 5) ORDER BY n;
+SELECT count(*) FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') WHERE variables LIKE '%"first":3,%';
+----
+4
+
+# Ordered by updatedAt (Linear's orderBy), newest first.
+query T
+SELECT query LIKE '%orderBy: updatedAt%' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+true
+
+# Typed, tracker-aligned columns.
+query TITTTTTTTT
+SELECT key, number, team_key, assignee, assignees, user_login, list_sort(labels), priority_label, estimate, due_date
+FROM linear.main.issues() WHERE key IN ('ENG-2', 'ENG-4') ORDER BY key;
+----
+ENG-2	2	ENG	grace	[grace]	ada	[API, Feature]	High	5.0	2026-11-28
+ENG-4	4	ENG	NULL	[]	kat	[Feature]	Low	NULL	NULL
+
+query TTTTTT
+SELECT key, created_at, started_at, completed_at, canceled_at, closed_at FROM linear.main.issues() WHERE key IN ('ENG-1', 'ENG-5') ORDER BY key;
+----
+ENG-1	2026-10-21 09:00:00+00	2026-10-22 10:00:00+00	2026-10-24 16:00:00+00	NULL	2026-10-24 16:00:00+00
+ENG-5	2026-10-22 08:00:00+00	NULL	NULL	2026-10-23 09:00:00+00	2026-10-23 09:00:00+00
+
+query TTTT
+SELECT project, project_milestone, cycle_number, html_url FROM linear.main.issues() WHERE key = 'ENG-1';
+----
+Apollo	Alpha	41	https://linear.app/acme/issue/ENG-1/login-page-crashes-on-safari
+
+# key = / IN uses Linear's identifier-aware id comparator; projection keeps the selection small.
+query T
+SELECT title FROM linear.main.issues() WHERE key = 'OPS-1';
+----
+Rotate TLS certificates
+
+query TTT
+SELECT variables::JSON->>'$.filter', query LIKE '%labels%', query LIKE '%description%' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+{"id":{"eq":"OPS-1"}}	false	false
+
+query T
+SELECT key FROM linear.main.issues() WHERE key IN ('ENG-3', 'OPS-2', 'NOPE-9') ORDER BY key;
+----
+ENG-3
+OPS-2
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+{"id":{"in":["ENG-3","OPS-2","NOPE-9"]}}
+
+# Team + 'open' state become one IssueFilter (state types, GitHub vocabulary).
+query TT
+SELECT key, status_type FROM linear.main.issues() WHERE team_key = 'ENG' AND state = 'open' ORDER BY key;
+----
+ENG-2	started
+ENG-3	started
+ENG-4	backlog
+ENG-6	unstarted
+ENG-7	unstarted
+
+query TT
+SELECT variables LIKE '%{"team":{"key":{"eq":"ENG"}}}%', variables LIKE '%{"state":{"type":{"nin":["completed","canceled"]}}}%'
+FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+true	true
+
+query T
+SELECT key FROM linear.main.issues() WHERE state = 'closed' ORDER BY key;
+----
+ENG-1
+ENG-5
+OPS-1
+
+query T
+SELECT key FROM linear.main.issues() WHERE status = 'Todo' AND status_type = 'unstarted' ORDER BY key;
+----
+ENG-6
+ENG-7
+
+# list_contains on labels becomes labels.some.name.
+query T
+SELECT key FROM linear.main.issues() WHERE list_contains(labels, 'Bug') ORDER BY key;
+----
+ENG-1
+ENG-3
+ENG-5
+OPS-2
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+{"labels":{"some":{"name":{"eq":"Bug"}}}}
+
+# IS NULL on a relation becomes { assignee: { null: true } }.
+query T
+SELECT key FROM linear.main.issues() WHERE assignee IS NULL ORDER BY key;
+----
+ENG-4
+ENG-5
+OPS-2
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+{"assignee":{"null":true}}
+
+query T
+SELECT key FROM linear.main.issues() WHERE assignee = 'ada' AND state <> 'closed' ORDER BY key;
+----
+ENG-3
+
+query T
+SELECT key FROM linear.main.issues() WHERE user_login = 'kat' ORDER BY key;
+----
+ENG-3
+ENG-4
+OPS-1
+
+# Numeric ranges: priority and estimate.
+query TI
+SELECT key, priority FROM linear.main.issues() WHERE priority BETWEEN 1 AND 2 ORDER BY key;
+----
+ENG-1	1
+ENG-2	2
+ENG-3	2
+ENG-7	2
+OPS-1	1
+
+query T
+SELECT variables LIKE '%"priority":{"gte":1}%' AND variables LIKE '%"priority":{"lte":2}%' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+true
+
+query T
+SELECT key FROM linear.main.issues() WHERE estimate IS NULL ORDER BY key;
+----
+ENG-4
+ENG-5
+OPS-2
+
+# Time ranges.
+query T
+SELECT key FROM linear.main.issues() WHERE created_at >= TIMESTAMPTZ '2026-11-06 00:00:00+00' ORDER BY key;
+----
+ENG-6
+ENG-7
+OPS-2
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+{"createdAt":{"gte":"2026-11-06T00:00:00.000Z"}}
+
+# closed_at = coalesce(completed_at, canceled_at): a range is "either one in range".
+query T
+SELECT key FROM linear.main.issues() WHERE closed_at >= TIMESTAMPTZ '2026-10-24 00:00:00+00' ORDER BY key;
+----
+ENG-1
+OPS-1
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=issues') ORDER BY seq DESC LIMIT 1;
+----
+{"or":[{"completedAt":{"gte":"2026-10-24T00:00:00.000Z"}},{"canceledAt":{"gte":"2026-10-24T00:00:00.000Z"}}]}
+
+query T
+SELECT key FROM linear.main.issues() WHERE completed_at IS NOT NULL ORDER BY key;
+----
+ENG-1
+OPS-1
+
+query T
+SELECT key FROM linear.main.issues() WHERE cycle_number = 42 AND project = 'Apollo' ORDER BY key;
+----
+ENG-2
+ENG-3
+ENG-7
+
+query T
+SELECT key FROM linear.main.issues() WHERE parent_key = 'ENG-2';
+----
+ENG-7
+
+query T
+SELECT key FROM linear.main.issues() WHERE starts_with(team_key, 'OP') ORDER BY key;
+----
+OPS-1
+OPS-2
+OPS-3
+
+# A predicate under OR is not pushed; the SDK still filters exactly.
+query T
+SELECT key FROM linear.main.issues() WHERE key = 'ENG-1' OR assignee = 'alan' ORDER BY key;
+----
+ENG-1
+OPS-3
+
+# filter := adds a raw IssueFilter, ANDed with the pushed WHERE filters.
+query T
+SELECT key FROM linear.main.issues(filter := '{"estimate": {"gte": 5}}') WHERE team_key = 'ENG' ORDER BY key;
+----
+ENG-2
+ENG-3
+
+statement error
+SELECT key FROM linear.main.issues(filter := '[1, 2]');
+----
+<REGEX>:.*JSON object.*
+
+# Issues UNION across trackers on the shared column names.
+query TITTTT
+SELECT repo, number, title, state, user_login, html_url FROM linear.main.issues() WHERE key = 'OPS-2';
+----
+OPS	2	Pager alert noise	open	grace	https://linear.app/acme/issue/OPS-2/pager-alert-noise
+
+# --------------------------------------------------------------- issue_history
+
+query TTTT
+SELECT created_at, actor, from_state, to_state FROM linear.main.issue_history(issue_key := 'ENG-1') WHERE is_state_change ORDER BY created_at;
+----
+2026-10-21 09:00:00+00	grace	NULL	Todo
+2026-10-22 10:00:00+00	ada	Todo	In Progress
+2026-10-24 16:00:00+00	ada	In Progress	Done
+
+# Cycle time: first started transition → completed transition.
+query TR
+SELECT issue_key, (epoch_ms(done) - epoch_ms(started)) / 3600000 AS cycle_time_hours FROM (
+  SELECT issue_key, min(created_at) FILTER (WHERE to_state_type = 'started') AS started,
+         max(created_at) FILTER (WHERE to_state_type = 'completed') AS done
+  FROM linear.main.issue_history() WHERE issue_key IN ('ENG-1', 'OPS-1') GROUP BY issue_key) ORDER BY issue_key;
+----
+ENG-1	54.0
+OPS-1	32.0
+
+# = / IN on issue_key reads only those issues (one issue(id:) query each).
+query I
+SELECT count(*) FROM read_json('{LINEAR_FIXTURE_URL}/__requests') WHERE operation = 'LinearIssueChildren' AND variables LIKE '%"id":"OPS-1"%';
+----
+1
+
+query TTIITT
+SELECT issue_key, to_assignee, from_priority, to_priority, added_labels, removed_labels FROM linear.main.issue_history()
+WHERE issue_key IN ('ENG-1', 'ENG-2') AND (to_assignee IS NOT NULL OR to_priority IS NOT NULL OR len(added_labels) > 0) ORDER BY issue_key, created_at;
+----
+ENG-1	NULL	NULL	NULL	[Bug]	NULL
+ENG-1	ada	NULL	NULL	NULL	NULL
+ENG-2	NULL	3	2	NULL	NULL
+
+query RR
+SELECT from_estimate, to_estimate FROM linear.main.issue_history(issue_key := 'ENG-1') WHERE to_estimate IS NOT NULL;
+----
+2.0	3.0
+
+# Without keys the scan fans out over issues; team_key narrows the issues listing.
+query I
+SELECT count(*) FROM linear.main.issue_history() WHERE team_key = 'OPS';
+----
+4
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests') WHERE operation = 'LinearIssueFanout' ORDER BY seq DESC LIMIT 1;
+----
+{"team":{"key":{"eq":"OPS"}}}
+
+# Small pages: issues whose nested history overflows are continued with issue(id:) queries.
+query II
+SELECT count(*), count(DISTINCT id) FROM linear.main.issue_history(page_size := 2);
+----
+15	15
+
+query I
+SELECT count(*) FROM linear.main.issue_history(issue_key := 'ENG-404');
 ----
 0
-5
-10
 
-# Larger than one batch: the cursor must carry across process calls.
-query II
-SELECT count(*), max(n) FROM linear.main.sequence_table(25000);
+# --------------------------------------------------------------------- comments
+
+query TTTT
+SELECT user_login, body, parent_id, resolved_at FROM linear.main.comments(issue_key := 'ENG-1') ORDER BY created_at;
 ----
-25000	24999
+ada	Reproduced on **Safari 18.1**.	NULL	NULL
+grace	Thanks! Fix looks good.	cm-1	2026-10-24 16:00:00+00
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=comments') ORDER BY seq DESC LIMIT 1;
+----
+{"issue":{"id":{"eq":"ENG-1"}}}
+
+query TT
+SELECT issue_key, body FROM linear.main.comments() WHERE user_login = 'kat' ORDER BY created_at;
+----
+ENG-2	Globex needs this before renewal.
+OPS-1	Certificates rotated in all regions.
+
+query TT
+SELECT body, project_update_id FROM linear.main.comments() WHERE issue_key IS NULL;
+----
+Great progress!	pu-1
 
 query I
-SELECT count(*) FROM linear.main.sequence_table(0);
+SELECT count(*) FROM linear.main.comments() WHERE team_key = 'ENG';
 ----
-0
+3
 
-# count is constrained to [0, 1000000].
-statement error
-SELECT * FROM linear.main.sequence_table(-1);
+# ------------------------------------------------------------------ attachments
+
+query TTT
+SELECT title, source_type, metadata->>'state' FROM linear.main.attachments(issue_key := 'ENG-1') ORDER BY title;
 ----
-<REGEX>:.*
-
-# Named arguments are constrained too: step >= 1.
-statement error
-SELECT * FROM linear.main.sequence_table(3, step := 0);
-----
-<REGEX>:.*
-
-# ------------------------------------------------- fetch_items (REST table fn)
-
-query IIT
-SELECT count(*), sum(id), min(name) FROM linear.main.fetch_items('{LINEAR_MOCK_API}', page_size := 4);
-----
-25	325	item-01
+Fix Safari crash #412	github	merged
+Sentry: TypeError in login.js	sentry	NULL
 
 query TI
-SELECT category, count(*) FROM linear.main.fetch_items('{LINEAR_MOCK_API}') GROUP BY category ORDER BY category;
+SELECT source_type, count(*) FROM linear.main.attachments() GROUP BY source_type ORDER BY source_type;
 ----
-hardware	8
-service	8
-software	9
+figma	1
+github	1
+sentry	1
 
-# The harness runs LINEAR_MOCK_API with MOCK_API_FLAKY=1: every page answers
-# 429 + Retry-After once, so every query above also exercised the retry path.
-
-# LINEAR_MOCK_API_AUTH requires a bearer token ('test-token'). Every language's
-# fetch_items must put the HTTP status code in its error message.
-statement error
-SELECT count(*) FROM linear.main.fetch_items('{LINEAR_MOCK_API_AUTH}');
+query T
+SELECT issue_key FROM linear.main.attachments() WHERE source_type = 'figma';
 ----
-401
+ENG-2
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=attachments') ORDER BY seq DESC LIMIT 1;
+----
+{"sourceType":{"eq":"figma"}}
+
+# -------------------------------------------------------------- issue_relations
+
+query TTT
+SELECT issue_key, type, related_issue_key FROM linear.main.issue_relations() ORDER BY issue_key;
+----
+ENG-3	blocks	ENG-2
+ENG-5	duplicate	ENG-1
+OPS-3	related	ENG-6
+
+query TT
+SELECT type, related_issue_key FROM linear.main.issue_relations() WHERE issue_key = 'ENG-5';
+----
+duplicate	ENG-1
+
+# --------------------------------------------------------------- catalog tables
+
+query TTTI
+SELECT key, name, private, cycle_duration FROM linear.main.teams ORDER BY key;
+----
+ENG	Engineering	false	2
+OPS	Operations	true	1
+
+query T
+SELECT name FROM linear.main.workflow_states WHERE team_key = 'ENG' AND type = 'canceled' ORDER BY position;
+----
+Canceled
+Duplicate
+
+query T
+SELECT variables LIKE '%{"team":{"key":{"eq":"ENG"}}}%' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=workflowStates') ORDER BY seq DESC LIMIT 1;
+----
+true
+
+query TT
+SELECT name, parent_name FROM linear.main.labels WHERE team_key IS NULL AND NOT is_group ORDER BY name;
+----
+API	Area
+Bug	NULL
+Feature	NULL
+
+query TTTT
+SELECT display_name, email, active, admin FROM linear.main.users ORDER BY display_name;
+----
+ada	ada@example.com	true	true
+alan	alan@example.com	false	false
+grace	grace@example.com	true	false
+kat	kat@example.com	true	false
+
+query T
+SELECT user_login FROM linear.main.users WHERE active AND NOT admin ORDER BY 1;
+----
+grace
+kat
+
+query TTTT
+SELECT name, status_type, health, lead FROM linear.main.projects ORDER BY name;
+----
+Apollo	started	onTrack	ada
+Hermes	planned	atRisk	grace
+
+query TT
+SELECT name, list_sort(team_keys) FROM linear.main.projects WHERE health IN ('atRisk', 'offTrack');
+----
+Hermes	[ENG, OPS]
+
+query TTTR
+SELECT project, name, status, progress FROM linear.main.project_milestones ORDER BY project, target_date;
+----
+Apollo	Alpha	done	1.0
+Apollo	Beta	next	0.3
+Hermes	MVP	unstarted	0.0
+
+query TT
+SELECT project, arg_max(health, created_at) FROM linear.main.project_updates GROUP BY project ORDER BY project;
+----
+Apollo	onTrack
+Hermes	atRisk
+
+query TITT
+SELECT team_key, number, starts_at, ends_at FROM linear.main.cycles WHERE is_active ORDER BY team_key;
+----
+ENG	42	2026-11-03 00:00:00+00	2026-11-17 00:00:00+00
+OPS	7	2026-11-09 00:00:00+00	2026-11-16 00:00:00+00
+
+query TTTT
+SELECT name, status, owner, list_sort(project_names) FROM linear.main.initiatives ORDER BY name;
+----
+Q4 Launch	Active	ada	[Apollo, Hermes]
+Reliability	Planned	kat	[]
+
+query TT
+SELECT name, list_sort(project_names) FROM linear.main.roadmaps;
+----
+2026 Roadmap	[Apollo, Hermes]
+
+query TTIT
+SELECT name, tier, revenue, domains FROM linear.main.customers ORDER BY revenue DESC;
+----
+Globex	Enterprise	120000	[globex.example]
+Initech	Startup	30000	[initech.example]
+
+query TI
+SELECT customer, priority FROM linear.main.customer_needs WHERE issue_key = 'ENG-2' ORDER BY customer;
+----
+Globex	1
+Initech	0
+
+query T
+SELECT project FROM linear.main.customer_needs WHERE issue_key IS NULL;
+----
+Hermes
+
+query TTT
+SELECT created_at, user_login, ip FROM linear.main.audit_entries WHERE type = 'user.login' ORDER BY created_at;
+----
+2026-11-10 08:00:00+00	ada	203.0.113.5
+2026-11-11 13:00:00+00	grace	198.51.100.7
+
+query T
+SELECT variables::JSON->>'$.filter' FROM read_json('{LINEAR_FIXTURE_URL}/__requests?root=auditEntries') ORDER BY seq DESC LIMIT 1;
+----
+{"type":{"eq":"user.login"}}
 
 statement ok
-CREATE SECRET linear_api_test (TYPE linear_api, TOKEN 'test-token');
+DROP SECRET linear_admin;
 
-query I
-SELECT count(*) FROM linear.main.fetch_items('{LINEAR_MOCK_API_AUTH}', page_size := 25);
-----
-25
-
-# Several pages: the token must survive between batches (over HTTP each batch is a
-# separate request, so a token kept only in memory is lost after page 1).
-query I
-SELECT count(*) FROM linear.main.fetch_items('{LINEAR_MOCK_API_AUTH}', page_size := 7);
-----
-25
+# ------------------------------------------- an OAuth member token: scope feature-detection
 
 statement ok
-DROP SECRET linear_api_test;
+CREATE SECRET linear_member (TYPE linear, ACCESS_TOKEN 'lin_oauth_member', BASE_URL '{LINEAR_FIXTURE_URL}/graphql');
 
-# base_url must be http(s).
-statement error
-SELECT * FROM linear.main.fetch_items('ftp://example.com');
+# Linear refuses User.email for this key: the worker retries without it and returns NULL.
+query TT
+SELECT display_name, email FROM linear.main.users ORDER BY display_name;
 ----
-<REGEX>:.*
+ada	NULL
+alan	NULL
+grace	NULL
+kat	NULL
 
-# page_size is a named argument constrained to [1, 1000].
-statement error
-SELECT * FROM linear.main.fetch_items('{LINEAR_MOCK_API}', page_size := 0);
+query I
+SELECT count(*) FROM linear.main.users WHERE email IS NULL;
 ----
-<REGEX>:.*
+4
 
+# The audit log needs an admin key: a clear error, not an empty table.
 statement error
-SELECT * FROM linear.main.fetch_items('{LINEAR_MOCK_API}', page_size := 5000);
+SELECT count(*) FROM linear.main.audit_entries;
 ----
-<REGEX>:.*
+<REGEX>:.*admin.*
+
+# Customers are not enabled for this key: zero rows.
+query I
+SELECT count(*) FROM linear.main.customers;
+----
+0
+
+query I
+SELECT count(*) FROM linear.main.issues();
+----
+10
+
+statement ok
+DROP SECRET linear_member;
+
+# --------------------------------------------------- rate limits, retries, complexity
+
+statement ok
+CREATE SECRET linear_rl (TYPE linear, API_KEY 'lin_api_admin', BASE_URL '{LINEAR_FIXTURE_URL}/ratelimited/graphql');
+
+# Every distinct request is answered RATELIMITED once; the worker waits for the reset and retries.
+query I
+SELECT count(*) FROM linear.main.teams;
+----
+2
+
+query II
+SELECT count(*) FILTER (WHERE error LIKE '%Rate limit%'), count(*) FILTER (WHERE status = 200) FROM read_json('{LINEAR_FIXTURE_URL}/__requests?path=/ratelimited/graphql');
+----
+1	1
+
+statement ok
+DROP SECRET linear_rl;
+
+statement ok
+CREATE SECRET linear_flaky (TYPE linear, API_KEY 'lin_api_admin', BASE_URL '{LINEAR_FIXTURE_URL}/flaky/graphql');
+
+query I
+SELECT count(*) FROM linear.main.workflow_states;
+----
+12
+
+query II
+SELECT count(*) FILTER (WHERE status = 502), count(*) FILTER (WHERE status = 200) FROM read_json('{LINEAR_FIXTURE_URL}/__requests?path=/flaky/graphql');
+----
+1	1
+
+statement ok
+DROP SECRET linear_flaky;
+
+statement ok
+CREATE SECRET linear_strict (TYPE linear, API_KEY 'lin_api_admin', BASE_URL '{LINEAR_FIXTURE_URL}/strict/graphql');
+
+# This endpoint caps complexity at 1500: the worker halves its page size until the query fits.
+query II
+SELECT count(*), sum(len(labels)) FROM linear.main.issues(page_size := 250);
+----
+10	11
+
+query I
+SELECT count(*) > 0 FROM read_json('{LINEAR_FIXTURE_URL}/__requests?path=/strict/graphql') WHERE error LIKE '%too complex%';
+----
+true
+
+statement ok
+DROP SECRET linear_strict;
+
+# ------------------------------------------------------------- strictness checks
+
+# Every query the worker sent validated against the vendored Linear schema.
+query I
+SELECT count(*) FROM read_json('{LINEAR_FIXTURE_URL}/__requests?invalid=1') WHERE seq > 0;
+----
+0
+
+# And none of them was a mutation.
+query I
+SELECT count(*) FROM read_json('{LINEAR_FIXTURE_URL}/__requests') WHERE query ILIKE '%mutation%';
+----
+0
