@@ -80,29 +80,29 @@ export const CATALOG_COMMENT =
 
 export const CATALOG_DOC_LLM =
   "Read-only SQL access to a Linear workspace through its GraphQL API (https://api.linear.app/graphql). " +
-  "issues() is the main entry point: WHERE filters on key / id, repo / team_key, number, title, state " +
-  "('open' / 'closed'), status (workflow state name), status_type (triage, backlog, unstarted, started, " +
-  "completed, canceled), priority, estimate, assignee, user_login (creator), labels (list_contains), " +
-  "project, project_milestone, cycle_number, parent_key and created_at / updated_at / started_at / " +
-  "completed_at / canceled_at / closed_at ranges are translated into Linear's IssueFilter input, and only " +
-  "the GraphQL fields of the selected columns are requested. Issue columns align with the GitHub, GitLab " +
-  "and Jira workers (repo, key, number, title, state 'open'/'closed', status, assignee, assignees, " +
-  "user_login, labels, body, html_url, created_at, updated_at, closed_at) so issues UNION across " +
-  "trackers. issue_history gives every change (from_state / to_state, actor, created_at) for cycle and " +
-  "lead time; comments (Markdown body), attachments and issue_relations take issue_key := or a pushed " +
-  "issue_key = / IN. Tables: teams, workflow_states, labels, users, projects, project_milestones, " +
-  "project_updates (health), cycles, initiatives, roadmaps, customers, customer_needs and audit_entries " +
-  "(admin keys only). Every object needs a `linear` secret: API_KEY (personal API key) or ACCESS_TOKEN " +
-  "(OAuth 2.0), optional BASE_URL. Linear's request and complexity rate limits are read from the " +
-  "X-RateLimit-* headers and honoured; pages are sized to stay inside the complexity budget. Docs: " +
-  "https://linear.app/developers/graphql ; filtering https://linear.app/developers/filtering ; rate limits " +
-  "https://linear.app/developers/rate-limiting .";
+  "Reach for it to analyse issue tracking and planning: backlogs and workload, workflow-state changes for " +
+  "cycle and lead time, cycles and project progress, initiatives and customer requests. issues() is the " +
+  "main entry point: WHERE filters on key / id, repo / team_key, number, title, state ('open' / " +
+  "'closed'), status (workflow state name), status_type (triage, backlog, unstarted, started, completed, " +
+  "canceled), priority, estimate, assignee, user_login (creator), labels (list_contains), project, " +
+  "project_milestone, cycle_number, parent_key and created / updated / started / completed / canceled / " +
+  "closed ranges are translated into Linear's IssueFilter input, and only the GraphQL fields of the " +
+  "selected columns are requested. Issue columns align with the GitHub, GitLab and Jira workers (repo, " +
+  "key, number, title, state 'open'/'closed', status, assignee, assignees, user_login, labels, body, " +
+  "html_url, created_at, updated_at, closed_at) so issues UNION across trackers. Per-issue collections " +
+  "(history, comments, attachments, relations) take issue_key := or a pushed issue_key = / IN; the " +
+  "workspace's teams, planning objects, customers and audit log (admin keys only) are catalog tables " +
+  "with their own filter pushdown. Every object needs a `linear` secret: API_KEY (personal API key) or " +
+  "ACCESS_TOKEN (OAuth 2.0), optional BASE_URL. Linear's request and complexity rate limits are read " +
+  "from the X-RateLimit-* headers and honoured; pages are sized to stay inside the complexity budget. " +
+  "Docs: https://linear.app/developers/graphql ; filtering https://linear.app/developers/filtering ; " +
+  "rate limits https://linear.app/developers/rate-limiting .";
 
 export const CATALOG_DOC_MD =
   "# Linear\n\n" +
-  "Query a Linear workspace from DuckDB: issues with their full change history, comments, attachments " +
-  "and relations; teams, workflow states, labels and users; projects, milestones, project updates, " +
-  "cycles, initiatives and roadmaps; customers and customer requests; and the audit log. Read-only.\n\n" +
+  "Query a Linear workspace from DuckDB: issues with their full change history and discussion, the " +
+  "workspace's teams and workflow, planning (projects, cycles, initiatives, roadmaps), customer " +
+  "requests and the audit log. Read-only.\n\n" +
   "Create a `linear` secret with a personal API key (`API_KEY`) or an OAuth access token " +
   "(`ACCESS_TOKEN`). WHERE filters become Linear filter inputs and only the columns you select are " +
   "fetched, so filter and project early; rate limits and query complexity are handled for you.\n\n" +
@@ -111,13 +111,14 @@ export const CATALOG_DOC_MD =
 export const SCHEMA_DOC_LLM =
   "Linear as SQL. Table functions take named arguments: issues(include_archived := false, filter := NULL, " +
   "page_size := 100) where filter is a raw Linear IssueFilter JSON object ANDed with the pushed WHERE " +
-  "filters; issue_history / attachments / issue_relations (issue_key := NULL) read `issue(id:)` for the " +
-  "keys passed or pushed (= / IN), and otherwise issue_history fans out over all issues (filter " +
-  "team_key to narrow it) while attachments and issue_relations list the whole workspace; " +
-  "comments(issue_key := NULL) pushes issue_key, team_key, user_login and time ranges into CommentFilter. " +
-  "teams, workflow_states, labels, users, projects, project_milestones, project_updates, cycles, " +
-  "initiatives, roadmaps, customers, customer_needs and audit_entries are catalog tables with their own " +
-  "filter pushdown. All objects need a `linear` secret.";
+  "filters. Per-issue functions (issue_key := NULL) read `issue(id:)` for the keys passed or pushed " +
+  "(= / IN); without keys the change-history function fans out over all issues (filter team_key to " +
+  "narrow it) while attachments and relations list the whole workspace, and comments push issue_key, " +
+  "team_key, user_login and time ranges into CommentFilter. Workspace objects (teams, workflow, " +
+  "planning, customers, audit log) are catalog tables with their own filter pushdown. All objects need " +
+  "a `linear` secret.";
+
+export const SCHEMA_COMMENT = "Linear issues, their history and discussion, and workspace planning objects, read-only.";
 
 export const SCHEMA_DOC_MD =
   "## main\n\n" +

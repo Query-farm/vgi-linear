@@ -6,7 +6,7 @@
 import { type CatalogDescriptor, field, schema, utf8, type VgiFunction } from "@query-farm/vgi";
 import { DEFAULT_BASE_URL, SECRET_TYPE } from "./linear/client.ts";
 import { FUNCTIONS, TABLES } from "./linear/resources.ts";
-import { CATALOG_COMMENT, CATALOG_NAME, CATALOG_TAGS, SCHEMA_DOC_MD, SCHEMA_TAGS, SOURCE_URL } from "./meta.ts";
+import { CATALOG_COMMENT, CATALOG_NAME, CATALOG_TAGS, SCHEMA_COMMENT, SCHEMA_TAGS, SOURCE_URL } from "./meta.ts";
 
 export { FUNCTIONS, TABLES };
 
@@ -76,7 +76,7 @@ export const CATALOG: CatalogDescriptor = {
   schemas: [
     {
       path: ["main"],
-      comment: SCHEMA_DOC_MD,
+      comment: SCHEMA_COMMENT,
       functions: FUNCTIONS,
       tables: TABLES,
       tags: { ...SCHEMA_TAGS, "vgi.example_queries": JSON.stringify(ALL_EXAMPLES.slice(0, 12)) },
